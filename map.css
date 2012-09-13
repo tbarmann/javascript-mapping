@@ -1,0 +1,20 @@
+
+.map_container {position:relative;}
+.map_legend {border:1px solid #999999;padding:0px;font-family:arial;font-size:10px;position:absolute;z-index:1;}
+.map_legend td {border:0px solid #000000;padding:3px; white-space: nowrap;}
+.map_legend td .legend_heading {white-space:normal; text-align:center;font-weight:bold; font-size:12px;}
+.color_box {width:20px;height:10px;border:1px solid #999999;}
+.map_label {position:absolute;font-size:9px;}
+#label_div {font-family:arial;font-size:11px;position:absolute;top:-10;left:-18;white-space:wrap;}
+.label_loc {text-align:center;font-weight:bold;font-size:10px;}
+.map {position:absolute;top:0;left:0;overflow:hidden;position:absolute;}
+.map_source {font-family:arial;margin-top:10px;float:left;text-align:left;font-size:10px;}
+.map_credit {font-family:arial;margin-top:10px;float:right;text-align:right;font-size:10px;}
+#block_island_box {border:1px solid #999999;padding:0px;position:absolute;z-index:0;}
+.labelToggle {font-family:arial;font-size:11px;}
+.labelToggle select {font-family:arial;font-size:11px;}
+.tip_table { border-collapse:collapse;border:0;background-color:#FFFFFF; border-color:#999999; padding:5px;}
+.tip_table td {border:1px solid #999999;padding:3px;font-size:9px;}
+.tip_table tr.even { background-color:#BDEEFC;}
+.tip_table tr.field_highlight td {font-weight:900;}
+.zoom {border:1px solid #999999; width:20px; height:20px;text-align:center;font-size:20px;}
