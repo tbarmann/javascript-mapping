@@ -335,80 +335,6 @@ function RGBToHex (rgb) {
 	return (r+g+b).toUpperCase();
 
 }
-
-
-
-
-
-function mapResizePct(pct) {
-
-	//global: map_init
-
-	// first time through, make a copy of all the coordinates so we have the original data
-	// when the map is resized
-	// stored in 2 dimensional array in global object map_init.coordArry
-
-	if (!map_init.hasOwnProperty('coordArry')) {
-		map_init.coordArry = [];
-		$("area").each (function (index) {
-			// get the coordinate pairs for this polygon area and put them in an array
-			var coordStr = $(this).attr('coords');
-			var thisCoordArry = coordStr.split(',')
-			map_init.coordArry.push(thisCoordArry);
-		});
-	}
-
-	// make a copy of the array of coordinates, stored in global object map_init
-	// necessary so we can modify the coordinates without changing the originals
-
-	var temp = {};
-	jQuery.extend(true,temp,map_init);
-	var coordArry = temp.coordArry.slice();
-
-//	console.log(map_init.coordArry[0]);
-
-	for (var x=0;x<coordArry.length;x++) {
-		for (y=0;y<coordArry[x].length;y++) {
-			coordArry[x][y] = Math.round(coordArry[x][y] * pct);
-		}
-
-	}
-	$("area").each (function (index) {
-		coordStr = coordArry[index].join();
-		$(this).attr('coords',coordStr);
-	});
-}
-
-
-function mapResizeWidth(width) {
-	var maxXY = getMaxXY("area");
-	var pct = width/maxXY.x;
-	mapResizePct(pct);
-
-
-
-}
-
-
-function moveArea(id,x_offset,y_offset) {
-
-	var selector = '#id_' + id + ',1';
-	var coordStr = $(selector).attr('coords');
-	var coordArry = coordStr.split(',');
-	for (var x=0;x<coordArry.length;x+=2) {
-		coordArry[x]*=1;
-		coordArry[x+1]*=1;
-		coordArry[x]+= parseInt(x_offset);
-		coordArry[x+1]+= parseInt(y_offset);
-
-	}
-	coordStr = coordArry.join();
-	$(selector).attr('coords',coordStr);
-}
-
-
-
-
 function locDataLookup(loc,field) {
 
 // globals: map_init
@@ -473,27 +399,223 @@ Contour.prototype.centroid = function() {
 };
 
 
-function shrinkArea(area,pct) {
+////////////// MAP RESIZING AND MOVING //////////////////////////////////////////////////////////////
 
 
-	var minXY = getMinXY(area);
+function mapResizePct(pct) {
 
-	var coordStr = $(area).attr('coords');
-	var coordArry = coordStr.split(',');
-	var newCoordStr = "";
+	//global: map_init
 
-	for (var j=0;j<coordArry.length;j+=2) {
-		var x = parseInt(((coordArry[j] - minXY.x)*pct) + minXY.x);
-		var y = parseInt(((coordArry[j+1] - minXY.y)*pct) + minXY.y);
-		if (newCoordStr.length > 0) {
-			newCoordStr += ", ";
+	// first time through, make a copy of all the coordinates so we have the original data
+	// when the map is resized
+	// stored in 2 dimensional array in global object map_init.coordArry
 
+	//if (!map_init.hasOwnProperty('coordArry')) {
+		map_init.coordArry = [];
+		$("area").each (function (index) {
+			// get the coordinate pairs for this polygon area and put them in an array
+			var coordStr = $(this).attr('coords');
+			var thisCoordArry = coordStr.split(',');
+
+
+
+			map_init.coordArry.push(thisCoordArry);
+		});
+//	}
+
+	// make a copy of the array of coordinates, stored in global object map_init
+	// necessary so we can modify the coordinates without changing the originals
+
+	var temp = {};
+	jQuery.extend(true,temp,map_init);
+	var coordArry = temp.coordArry.slice();
+
+//	console.log(map_init.coordArry[0]);
+
+	for (var x=0;x<coordArry.length;x++) {
+		for (y=0;y<coordArry[x].length;y++) {
+			coordArry[x][y] = Math.round(coordArry[x][y] * pct);
 		}
-		newCoordStr += x + "," + y;
+
+	}
+	$("area").each (function (index) {
+		coordStr = coordArry[index].join();
+		$(this).attr('coords',coordStr);
+	});
+}
+
+// ------------------------------------------------------------------------------------
+function mapResizeWidth(width) {
+	var maxXY = getMaxXY("area");
+	var pct = width/maxXY.x;
+	mapResizePct(pct);
+
+
+
+}
+
+// ------------------------------------------------------------------------------------
+function moveArea(area_selector,x_offset,y_offset) {
+
+	$(area_selector).each(function() {
+		var xArray=[], yArray=[];
+		var coordStr = $(this).attr('coords');
+		var newCoordArry = [];
+		var coordArry = coordStr.split(',');
+		for (var j=0;j<coordArry.length-1;j+=2) {
+			newCoordArry[j] = (parseInt(coordArry[j])+x_offset);
+			newCoordArry[j+1] = (parseInt(coordArry[j+1])+y_offset);
+		}
+		coordStr = newCoordArry.join();
+		$(this).attr('coords',coordStr);
+	});
+
+}
+
+
+// ------------------------------------------------------------------------------------
+function cornerMap(area_selector) {
+// move the map so the top left corner is at 0,0
+
+	var top_left = getMinXY(area_selector);
+	moveArea(area_selector,-top_left.x, -top_left.y);
+}
+
+// ------------------------------------------------------------------------------------
+function centerMapHere(area_selector, x,y) {
+
+
+
+}
+
+// ------------------------------------------------------------------------------------
+function getCenterPoint(area_selector) {
+	var maxX=[], maxY=[], minX=[], minY=[], xArray=[], yArray=[];
+	$(area_selector).each(function() {
+		var coordStr = $(this).attr('coords');
+		var coordArry = coordStr.split(',');
+		for (var j=0;j<coordArry.length-1;j+=2) {
+			xArray.push(coordArry[j]);
+			yArray.push(coordArry[j+1]);
+		}
+	});
+
+	maxX= Math.max.apply(Math,xArray);
+	maxY= Math.max.apply(Math,yArray);
+	minX= Math.min.apply(Math,xArray);
+	minY= Math.min.apply(Math,yArray);
+
+	console.log('Center: ' + parseInt((maxX-minX)/2) + ',' + parseInt((maxY-minY)/2));
+
+	return new Point(parseInt((maxX-minX)/2),parseInt((maxY-minY)/2));
+}
+
+
+// ------------------------------------------------------------------------------------
+function zoom_in() {
+
+	if (map_init.current_zoom_level < map_init.max_zoom_level) {
+
+		map_init.current_zoom_level++;
+		var pct = 1 + (map_init.current_zoom_level/10);
+
+		console.log(pct);
+		mapResizePct(pct);
+
+		labelMap();
+		colorMap();
+		buildLegend();
+		$('.map').maphilight();
+
+		// place legend div
+		var legend_width = parseInt($('.map_legend').css('width'));
+		var container_width = parseInt($('.map_container').css('width'))+legend_width_offset;
+		$('.map_legend').css('left',(container_width-legend_left_offset)+'px');
+		$('.map_legend').css('top',0 + legend_top_offset + 'px');
+
 	}
 
-	$(area).first().attr('coords',newCoordStr);
+
 }
+// ------------------------------------------------------------------------------------
+function zoom_out() {
+
+	if (map_init.current_zoom_level > map_init.min_zoom_level) {
+
+		map_init.current_zoom_level=map_init.current_zoom_level-1;
+		var pct = 1 - (map_init.current_zoom_level/-10);
+
+		console.log(pct);
+		mapResizePct(pct);
+
+		labelMap();
+		colorMap();
+		buildLegend();
+		$('.map').maphilight();
+
+		// place legend div
+		var legend_width = parseInt($('.map_legend').css('width'));
+		var container_width = parseInt($('.map_container').css('width'))+legend_width_offset;
+		$('.map_legend').css('left',(container_width-legend_left_offset)+'px');
+		$('.map_legend').css('top',0 + legend_top_offset + 'px');
+
+	}
+
+
+}
+
+// ------------------------------------------------------------------------------------
+function getMaxXY (selector) {
+	var xArry = [];
+	var yArry = [];
+	$(selector).each (function (i) {
+		// get the coordinate pairs for each polygon area and put them in an array
+		var coordStr = $(this).attr('coords');
+		var coordArry = coordStr.split(',');
+
+		// split off the x's in one array, the y's in another
+		for (x=0;x<coordArry.length;x+=2) {
+			xArry.push(parseInt(coordArry[x]));
+			yArry.push(parseInt(coordArry[x+1]));
+		}
+
+	}); // each
+
+	// get max,min, average for the x's and y's
+	// the average x,y will be the center of the square that bounds the polygon
+	var xmax = Math.max.apply(Math, xArry);
+	var ymax = Math.max.apply(Math, yArry);
+	return new Point(xmax,ymax);
+
+}
+// ------------------------------------------------------------------------------------
+function getMinXY (selector) {
+	var xArry = [];
+	var yArry = [];
+	$(selector).each (function (i) {
+		// get the coordinate pairs for each polygon area and put them in an array
+		var coordStr = $(this).attr('coords');
+		var coordArry = coordStr.split(',');
+
+		// split off the x's in one array, the y's in another
+		for (x=0;x<coordArry.length;x+=2) {
+			xArry.push(parseInt(coordArry[x]));
+			yArry.push(parseInt(coordArry[x+1]));
+		}
+
+	}); // each
+
+	// get min for the x's and y's
+
+	var xmin = Math.min.apply(Math, xArry);
+	var ymin = Math.min.apply(Math, yArry);
+	return new Point(xmin,ymin);
+
+}
+
+// ------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------
 
 
 function getMaxPropValueInArray(arr,prop) {
@@ -504,7 +626,7 @@ function getMaxPropValueInArray(arr,prop) {
 
 }
 
-
+// ------------------------------------------------------------------------------------
 function getMinPropValueInArray(arr,prop) {
 
 	var unique_value = extractPropertyArray(arr,prop).sort(function(a,b){return a - b});
@@ -513,8 +635,7 @@ function getMinPropValueInArray(arr,prop) {
 
 }
 
-
-
+// ------------------------------------------------------------------------------------
 
 Array.maxProp = function (array, prop) {
   var values = array.map(function (el) {
@@ -523,7 +644,7 @@ Array.maxProp = function (array, prop) {
   return Math.max.apply(Math, values);
 };
 
-
+// ------------------------------------------------------------------------------------
 Array.minProp = function (array, prop) {
   var values = array.map(function (el) {
     return el[prop];
@@ -531,7 +652,7 @@ Array.minProp = function (array, prop) {
   return Math.min.apply(Math, values);
 };
 
-
+// ------------------------------------------------------------------------------------
 function addCommas(nStr)
 {
 	nStr += '';
@@ -545,7 +666,7 @@ function addCommas(nStr)
 	return x1 + x2;
 }
 
-
+// ------------------------------------------------------------------------------------
 function getLegendStep(target) {
 // given a target value, searches through all datasource values of a particular field
 // and figures out which step the target value belongs
@@ -572,7 +693,7 @@ function getLegendStep(target) {
 	}
 
 }
-
+// ------------------------------------------------------------------------------------
 function extractLoc(thisOnMouseOverStr) {
 	// Extract the parameter - this is the location name
 	var thisOnMouseOverArray = thisOnMouseOverStr.split("'");
@@ -582,11 +703,12 @@ function extractLoc(thisOnMouseOverStr) {
 
 }
 
-
+// ------------------------------------------------------------------------------------
 function isEven(x) { return (x%2)?false:true; }
 function isOdd(x) { return (x%2)?true:false; }
 
 
+// ------------------------------------------------------------------------------------
 function mapOnMouseOver(loc){
 
 	var lower_loc = loc.replace(" ","_");
@@ -637,7 +759,7 @@ function mapOnMouseOver(loc){
 	Tip(html);
 }
 
-
+// ------------------------------------------------------------------------------------
 function buildLegend () {
 
 	// global objects: map_init, field
@@ -679,7 +801,7 @@ function buildLegend () {
 	return;
 }
 
-
+// ------------------------------------------------------------------------------------
 function initFields () {
 	// if the field does not have a label property, add one using the field's name
 	// global objects: map_init, fields
@@ -727,7 +849,7 @@ function initFields () {
 }
 
 
-
+// ------------------------------------------------------------------------------------
 function setStepBounds () {
 
 	// global objects: map_init, field
@@ -814,7 +936,7 @@ function setStepBounds () {
 
 
 
-
+// ------------------------------------------------------------------------------------
 
 function highlight_areas(e) {
 
@@ -851,55 +973,7 @@ function unhighlight_areas(e) {
 }
 
 
-function getMaxXY (selector) {
-	var xArry = [];
-	var yArry = [];
-	$(selector).each (function (i) {
-		// get the coordinate pairs for each polygon area and put them in an array
-		var coordStr = $(this).attr('coords');
-		var coordArry = coordStr.split(',');
-
-		// split off the x's in one array, the y's in another
-		for (x=0;x<coordArry.length;x+=2) {
-			xArry.push(parseInt(coordArry[x]));
-			yArry.push(parseInt(coordArry[x+1]));
-		}
-
-	}); // each
-
-	// get max,min, average for the x's and y's
-	// the average x,y will be the center of the square that bounds the polygon
-	var xmax = Math.max.apply(Math, xArry);
-	var ymax = Math.max.apply(Math, yArry);
-	return new Point(xmax,ymax);
-
-}
-
-function getMinXY (selector) {
-	var xArry = [];
-	var yArry = [];
-	$(selector).each (function (i) {
-		// get the coordinate pairs for each polygon area and put them in an array
-		var coordStr = $(this).attr('coords');
-		var coordArry = coordStr.split(',');
-
-		// split off the x's in one array, the y's in another
-		for (x=0;x<coordArry.length;x+=2) {
-			xArry.push(parseInt(coordArry[x]));
-			yArry.push(parseInt(coordArry[x+1]));
-		}
-
-	}); // each
-
-	// get min for the x's and y's
-
-	var xmin = Math.min.apply(Math, xArry);
-	var ymin = Math.min.apply(Math, yArry);
-	return new Point(xmin,ymin);
-
-}
-
-
+// ------------------------------------------------------------------------------------
 function lookupVal(location) {
 
 	var datasource = map_init.datasource;
@@ -934,7 +1008,7 @@ function getFieldIndexByName (fieldname) {
 	return 0;
 }
 
-
+// ------------------------------------------------------------------------------------
 function labelMap () {
 	// set image to the correct dimensions
 	var maxXY = getMaxXY("area");
@@ -986,6 +1060,7 @@ function labelMap () {
 		}
 		var this_centroid_pt = perimeter.centroid();
 
+
 		// create a style based on the centroid x,y coordinates
 		var this_style = 'left:' + this_centroid_pt.x + 'px; top:' + this_centroid_pt.y + 'px; ';
 		var this_id = this_loc + '_label';
@@ -1000,7 +1075,7 @@ function labelMap () {
 	$('#label_div').html(label_div_content);
 }
 
-
+// ------------------------------------------------------------------------------------
 function getPaletteColor(index) {
 
 
@@ -1012,7 +1087,7 @@ function getPaletteColor(index) {
 
 }
 
-
+// ------------------------------------------------------------------------------------
 function colorMap() {
 
 
@@ -1047,55 +1122,3 @@ function colorMap() {
 
 }
 
-
-function zoom_in() {
-
-	if (map_init.current_zoom_level < map_init.max_zoom_level) {
-
-		map_init.current_zoom_level++;
-		var pct = 1 + (map_init.current_zoom_level/10);
-
-		console.log(pct);
-		mapResizePct(pct);
-
-		labelMap();
-		colorMap();
-		buildLegend();
-		$('.map').maphilight();
-
-		// place legend div
-		var legend_width = parseInt($('.map_legend').css('width'));
-		var container_width = parseInt($('.map_container').css('width'))+legend_width_offset;
-		$('.map_legend').css('left',(container_width-legend_left_offset)+'px');
-		$('.map_legend').css('top',0 + legend_top_offset + 'px');
-
-	}
-
-
-}
-
-function zoom_out() {
-
-	if (map_init.current_zoom_level > map_init.min_zoom_level) {
-
-		map_init.current_zoom_level=map_init.current_zoom_level-1;
-		var pct = 1 - (map_init.current_zoom_level/-10);
-
-		console.log(pct);
-		mapResizePct(pct);
-
-		labelMap();
-		colorMap();
-		buildLegend();
-		$('.map').maphilight();
-
-		// place legend div
-		var legend_width = parseInt($('.map_legend').css('width'));
-		var container_width = parseInt($('.map_container').css('width'))+legend_width_offset;
-		$('.map_legend').css('left',(container_width-legend_left_offset)+'px');
-		$('.map_legend').css('top',0 + legend_top_offset + 'px');
-
-	}
-
-
-}
